@@ -44,9 +44,7 @@ type
     FOnLoadStart: TOnLoadStart;
     FOnLoadEnd: TOnLoadEnd;
     FOnLoadError: TOnLoadError;
-    FOnRenderProcessTerminated: TOnRenderProcessTerminated;
-    FOnPluginCrashed: TOnPluginCrashed;
-    FOnTakeFocus: TOnTakeFocus;
+    FOnTakeFocus: TOnTakeFocus;
     FOnSetFocus: TOnSetFocus;
     FOnGotFocus: TOnGotFocus;
     FOnBeforeContextMenu: TOnBeforeContextMenu;
@@ -67,20 +65,24 @@ type
     FOnJsdialog: TOnJsdialog;
     FOnBeforeUnloadDialog: TOnBeforeUnloadDialog;
     FOnResetDialogState: TOnResetDialogState;
+    FOnDialogClosed: TOnDialogClosed;
     FOnBeforePopup: TOnBeforePopup;
     FOnAfterCreated: TOnAfterCreated;
     FOnBeforeClose: TOnBeforeClose;
     FOnRunModal: TOnRunModal;
     FOnClose: TOnClose;
+    FOnBeforeBrowse: TOnBeforeBrowse;
     FOnBeforeResourceLoad: TOnBeforeResourceLoad;
     FOnGetResourceHandler: TOnGetResourceHandler;
     FOnResourceRedirect: TOnResourceRedirect;
     FOnGetAuthCredentials: TOnGetAuthCredentials;
     FOnQuotaRequest: TOnQuotaRequest;
-    FOnGetCookieManager: TOnGetCookieManager;
     FOnProtocolExecution: TOnProtocolExecution;
     FOnBeforePluginLoad: TOnBeforePluginLoad;
+    FOnPluginCrashed: TOnPluginCrashed;
+    FOnRenderProcessTerminated: TOnRenderProcessTerminated;
     FOnFileDialog: TOnFileDialog;
+    FOnDragEnter: TOnDragEnter;
 
     FOptions: TChromiumOptions;
     FUserStyleSheetLocation: ustring;
@@ -102,8 +104,6 @@ type
     procedure doOnLoadEnd(const browser: ICefBrowser; const frame: ICefFrame; httpStatusCode: Integer); virtual;
     procedure doOnLoadError(const browser: ICefBrowser; const frame: ICefFrame; errorCode: Integer;
       const errorText, failedUrl: ustring); virtual;
-    procedure doOnRenderProcessTerminated(const browser: ICefBrowser; status: TCefTerminationStatus); virtual;
-    procedure doOnPluginCrashed(const browser: ICefBrowser; const pluginPath: ustring); virtual;
 
     procedure doOnTakeFocus(const browser: ICefBrowser; next: Boolean); virtual;
     function doOnSetFocus(const browser: ICefBrowser; source: TCefFocusSource): Boolean; virtual;
@@ -145,8 +145,9 @@ type
       const messageText: ustring; isReload: Boolean;
       const callback: ICefJsDialogCallback): Boolean; virtual;
     procedure doOnResetDialogState(const browser: ICefBrowser); virtual;
+    procedure doOnDialogClosed(const browser: ICefBrowser); virtual;
 
-    function doOnBeforePopup(const browser: ICefBrowser;
+    function doOnBeforePopup(const browser: ICefBrowser;
       const frame: ICefFrame; const targetUrl, targetFrameName: ustring;
       var popupFeatures: TCefPopupFeatures; var windowInfo: TCefWindowInfo;
       var client: ICefClient; var settings: TCefBrowserSettings;
@@ -156,6 +157,8 @@ type
     function doOnRunModal(const browser: ICefBrowser): Boolean; virtual;
     function doOnClose(const browser: ICefBrowser): Boolean; virtual;
 
+    function doOnBeforeBrowse(const browser: ICefBrowser; const frame: ICefFrame;
+      const request: ICefRequest; is_redirect: Boolean): Boolean; virtual;
     function doOnBeforeResourceLoad(const browser: ICefBrowser; const frame: ICefFrame;
       const request: ICefRequest): Boolean; virtual;
     function doOnGetResourceHandler(const browser: ICefBrowser; const frame: ICefFrame;
@@ -167,12 +170,12 @@ type
       const callback: ICefAuthCallback): Boolean; virtual;
     function doOnQuotaRequest(const browser: ICefBrowser; const originUrl: ustring;
       newSize: Int64; const callback: ICefQuotaCallback): Boolean; virtual;
-    function doOnGetCookieManager(const browser: ICefBrowser;
-      const mainUrl: ustring): ICefCookieManager; virtual;
     procedure doOnProtocolExecution(const browser: ICefBrowser;
       const url: ustring; out allowOsExecution: Boolean); virtual;
     function doOnBeforePluginLoad(const browser: ICefBrowser; const url,
       policyUrl: ustring; const info: ICefWebPluginInfo): Boolean; virtual;
+    procedure doOnPluginCrashed(const browser: ICefBrowser; const pluginPath: ustring); virtual;
+    procedure doOnRenderProcessTerminated(const browser: ICefBrowser; status: TCefTerminationStatus); virtual;
 
     function doOnFileDialog(const browser: ICefBrowser; mode: TCefFileDialogMode;
       const title, defaultFileName: ustring; acceptTypes: TStrings;
@@ -182,20 +185,23 @@ type
     function doOnGetViewRect(const browser: ICefBrowser; rect: PCefRect): Boolean;
     function doOnGetScreenPoint(const browser: ICefBrowser; viewX, viewY: Integer;
       screenX, screenY: PInteger): Boolean;
+    function doOnGetScreenInfo(const browser: ICefBrowser; screenInfo: PCefScreenInfo): Boolean;
     procedure doOnPopupShow(const browser: ICefBrowser; show: Boolean);
     procedure doOnPopupSize(const browser: ICefBrowser; const rect: PCefRect);
     procedure doOnPaint(const browser: ICefBrowser; kind: TCefPaintElementType;
-      dirtyRectsCount: Cardinal; const dirtyRects: PCefRectArray;
+      dirtyRectsCount: NativeUInt; const dirtyRects: PCefRectArray;
       const buffer: Pointer; width, height: Integer);
     procedure doOnCursorChange(const browser: ICefBrowser; cursor: TCefCursorHandle);
+    procedure doOnScrollOffsetChanged(const browser: ICefBrowser);
+
+    function doOnDragEnter(const browser: ICefBrowser; const dragData: ICefDragData;
+      mask: TCefDragOperations): Boolean;
 
     property OnProcessMessageReceived: TOnProcessMessageReceived read FOnProcessMessageReceived write FOnProcessMessageReceived;
     property OnLoadStart: TOnLoadStart read FOnLoadStart write FOnLoadStart;
     property OnLoadEnd: TOnLoadEnd read FOnLoadEnd write FOnLoadEnd;
     property OnLoadError: TOnLoadError read FOnLoadError write FOnLoadError;
-    property OnRenderProcessTerminated: TOnRenderProcessTerminated read FOnRenderProcessTerminated write FOnRenderProcessTerminated;
-    property OnPluginCrashed: TOnPluginCrashed read FOnPluginCrashed write FOnPluginCrashed;
-    property OnTakeFocus: TOnTakeFocus read FOnTakeFocus write FOnTakeFocus;
+    property OnTakeFocus: TOnTakeFocus read FOnTakeFocus write FOnTakeFocus;
     property OnSetFocus: TOnSetFocus read FOnSetFocus write FOnSetFocus;
     property OnGotFocus: TOnGotFocus read FOnGotFocus write FOnGotFocus;
     property OnBeforeContextMenu: TOnBeforeContextMenu read FOnBeforeContextMenu write FOnBeforeContextMenu;
@@ -216,20 +222,24 @@ type
     property OnJsdialog: TOnJsdialog read FOnJsdialog write FOnJsdialog;
     property OnBeforeUnloadDialog: TOnBeforeUnloadDialog read FOnBeforeUnloadDialog write FOnBeforeUnloadDialog;
     property OnResetDialogState: TOnResetDialogState read FOnResetDialogState write FOnResetDialogState;
+    property OnDialogClosed: TOnDialogClosed read FOnDialogClosed write FOnDialogClosed;
     property OnBeforePopup: TOnBeforePopup read FOnBeforePopup write FOnBeforePopup;
     property OnAfterCreated: TOnAfterCreated read FOnAfterCreated write FOnAfterCreated;
     property OnBeforeClose: TOnBeforeClose read FOnBeforeClose write FOnBeforeClose;
     property OnRunModal: TOnRunModal read FOnRunModal write FOnRunModal;
     property OnClose: TOnClose read FOnClose write FOnClose;
+    property OnBeforeBrowse: TOnBeforeBrowse read FOnBeforeBrowse write FOnBeforeBrowse;
     property OnBeforeResourceLoad: TOnBeforeResourceLoad read FOnBeforeResourceLoad write FOnBeforeResourceLoad;
     property OnGetResourceHandler: TOnGetResourceHandler read FOnGetResourceHandler write FOnGetResourceHandler;
     property OnResourceRedirect: TOnResourceRedirect read FOnResourceRedirect write FOnResourceRedirect;
     property OnGetAuthCredentials: TOnGetAuthCredentials read FOnGetAuthCredentials write FOnGetAuthCredentials;
     property OnQuotaRequest: TOnQuotaRequest read FOnQuotaRequest write FOnQuotaRequest;
-    property OnGetCookieManager: TOnGetCookieManager read FOnGetCookieManager write FOnGetCookieManager;
     property OnProtocolExecution: TOnProtocolExecution read FOnProtocolExecution write FOnProtocolExecution;
     property OnBeforePluginLoad: TOnBeforePluginLoad read FOnBeforePluginLoad write FOnBeforePluginLoad;
+    property OnPluginCrashed: TOnPluginCrashed read FOnPluginCrashed write FOnPluginCrashed;
+    property OnRenderProcessTerminated: TOnRenderProcessTerminated read FOnRenderProcessTerminated write FOnRenderProcessTerminated;
     property OnFileDialog: TOnFileDialog read FOnFileDialog write FOnFileDialog;
+    property OnDragEnter: TOnDragEnter read FOnDragEnter write FOnDragEnter;
 
     property DefaultUrl: ustring read FDefaultUrl write FDefaultUrl;
     property Options: TChromiumOptions read FOptions write FOptions;
@@ -256,9 +266,7 @@ type
     FOnLoadStart: TOnLoadStart;
     FOnLoadEnd: TOnLoadEnd;
     FOnLoadError: TOnLoadError;
-    FOnRenderProcessTerminated: TOnRenderProcessTerminated;
-    FOnPluginCrashed: TOnPluginCrashed;
-    FOnTakeFocus: TOnTakeFocus;
+    FOnTakeFocus: TOnTakeFocus;
     FOnSetFocus: TOnSetFocus;
     FOnGotFocus: TOnGotFocus;
     FOnBeforeContextMenu: TOnBeforeContextMenu;
@@ -279,28 +287,35 @@ type
     FOnJsdialog: TOnJsdialog;
     FOnBeforeUnloadDialog: TOnBeforeUnloadDialog;
     FOnResetDialogState: TOnResetDialogState;
+    FOnDialogClosed: TOnDialogClosed;
     FOnBeforePopup: TOnBeforePopup;
     FOnAfterCreated: TOnAfterCreated;
     FOnBeforeClose: TOnBeforeClose;
     FOnRunModal: TOnRunModal;
     FOnClose: TOnClose;
+    FOnBeforeBrowse: TOnBeforeBrowse;
     FOnBeforeResourceLoad: TOnBeforeResourceLoad;
     FOnGetResourceHandler: TOnGetResourceHandler;
     FOnResourceRedirect: TOnResourceRedirect;
     FOnGetAuthCredentials: TOnGetAuthCredentials;
     FOnQuotaRequest: TOnQuotaRequest;
-    FOnGetCookieManager: TOnGetCookieManager;
     FOnProtocolExecution: TOnProtocolExecution;
     FOnBeforePluginLoad: TOnBeforePluginLoad;
+    FOnPluginCrashed: TOnPluginCrashed;
+    FOnRenderProcessTerminated: TOnRenderProcessTerminated;
     FOnFileDialog: TOnFileDialog;
 
     FOnGetRootScreenRect: TOnGetRootScreenRect;
     FOnGetViewRect: TOnGetViewRect;
     FOnGetScreenPoint: TOnGetScreenPoint;
+    FOnGetScreenInfo: TOnGetScreenInfo;
     FOnPopupShow: TOnPopupShow;
     FOnPopupSize: TOnPopupSize;
     FOnPaint: TOnPaint;
     FOnCursorChange: TOnCursorChange;
+    FOnScrollOffsetChanged: TOnScrollOffsetChanged;
+
+    FOnDragEnter: TOnDragEnter;
 
     FOptions: TChromiumOptions;
     FUserStyleSheetLocation: ustring;
@@ -319,8 +334,6 @@ type
     procedure doOnLoadEnd(const browser: ICefBrowser; const frame: ICefFrame; httpStatusCode: Integer); virtual;
     procedure doOnLoadError(const browser: ICefBrowser; const frame: ICefFrame; errorCode: Integer;
       const errorText, failedUrl: ustring); virtual;
-    procedure doOnRenderProcessTerminated(const browser: ICefBrowser; status: TCefTerminationStatus); virtual;
-    procedure doOnPluginCrashed(const browser: ICefBrowser; const pluginPath: ustring); virtual;
 
     procedure doOnTakeFocus(const browser: ICefBrowser; next: Boolean); virtual;
     function doOnSetFocus(const browser: ICefBrowser; source: TCefFocusSource): Boolean; virtual;
@@ -362,6 +375,7 @@ type
       const messageText: ustring; isReload: Boolean;
       const callback: ICefJsDialogCallback): Boolean; virtual;
     procedure doOnResetDialogState(const browser: ICefBrowser); virtual;
+    procedure doOnDialogClosed(const browser: ICefBrowser); virtual;
 
     function doOnBeforePopup(const browser: ICefBrowser;
       const frame: ICefFrame; const targetUrl, targetFrameName: ustring;
@@ -373,6 +387,8 @@ type
     function doOnRunModal(const browser: ICefBrowser): Boolean; virtual;
     function doOnClose(const browser: ICefBrowser): Boolean; virtual;
 
+    function doOnBeforeBrowse(const browser: ICefBrowser; const frame: ICefFrame;
+      const request: ICefRequest; is_redirect: Boolean): Boolean; virtual;
     function doOnBeforeResourceLoad(const browser: ICefBrowser; const frame: ICefFrame;
       const request: ICefRequest): Boolean; virtual;
     function doOnGetResourceHandler(const browser: ICefBrowser; const frame: ICefFrame;
@@ -384,12 +400,12 @@ type
       const callback: ICefAuthCallback): Boolean; virtual;
     function doOnQuotaRequest(const browser: ICefBrowser; const originUrl: ustring;
       newSize: Int64; const callback: ICefQuotaCallback): Boolean; virtual;
-    function doOnGetCookieManager(const browser: ICefBrowser;
-      const mainUrl: ustring): ICefCookieManager; virtual;
     procedure doOnProtocolExecution(const browser: ICefBrowser;
       const url: ustring; out allowOsExecution: Boolean); virtual;
     function doOnBeforePluginLoad(const browser: ICefBrowser; const url,
       policyUrl: ustring; const info: ICefWebPluginInfo): Boolean; virtual;
+    procedure doOnPluginCrashed(const browser: ICefBrowser; const pluginPath: ustring); virtual;
+    procedure doOnRenderProcessTerminated(const browser: ICefBrowser; status: TCefTerminationStatus); virtual;
 
     function doOnFileDialog(const browser: ICefBrowser; mode: TCefFileDialogMode;
       const title, defaultFileName: ustring; acceptTypes: TStrings;
@@ -399,20 +415,23 @@ type
     function doOnGetViewRect(const browser: ICefBrowser; rect: PCefRect): Boolean;
     function doOnGetScreenPoint(const browser: ICefBrowser; viewX, viewY: Integer;
       screenX, screenY: PInteger): Boolean;
+    function doOnGetScreenInfo(const browser: ICefBrowser; screenInfo: PCefScreenInfo): Boolean;
     procedure doOnPopupShow(const browser: ICefBrowser; show: Boolean);
     procedure doOnPopupSize(const browser: ICefBrowser; const rect: PCefRect);
     procedure doOnPaint(const browser: ICefBrowser; kind: TCefPaintElementType;
-      dirtyRectsCount: Cardinal; const dirtyRects: PCefRectArray;
+      dirtyRectsCount: NativeUInt; const dirtyRects: PCefRectArray;
       const buffer: Pointer; width, height: Integer);
     procedure doOnCursorChange(const browser: ICefBrowser; cursor: TCefCursorHandle);
+    procedure doOnScrollOffsetChanged(const browser: ICefBrowser);
+
+    function doOnDragEnter(const browser: ICefBrowser; const dragData: ICefDragData;
+      mask: TCefDragOperations): Boolean;
 
     property OnProcessMessageReceived: TOnProcessMessageReceived read FOnProcessMessageReceived write FOnProcessMessageReceived;
     property OnLoadStart: TOnLoadStart read FOnLoadStart write FOnLoadStart;
     property OnLoadEnd: TOnLoadEnd read FOnLoadEnd write FOnLoadEnd;
     property OnLoadError: TOnLoadError read FOnLoadError write FOnLoadError;
-    property OnRenderProcessTerminated: TOnRenderProcessTerminated read FOnRenderProcessTerminated write FOnRenderProcessTerminated;
-    property OnPluginCrashed: TOnPluginCrashed read FOnPluginCrashed write FOnPluginCrashed;
-    property OnTakeFocus: TOnTakeFocus read FOnTakeFocus write FOnTakeFocus;
+    property OnTakeFocus: TOnTakeFocus read FOnTakeFocus write FOnTakeFocus;
     property OnSetFocus: TOnSetFocus read FOnSetFocus write FOnSetFocus;
     property OnGotFocus: TOnGotFocus read FOnGotFocus write FOnGotFocus;
     property OnBeforeContextMenu: TOnBeforeContextMenu read FOnBeforeContextMenu write FOnBeforeContextMenu;
@@ -433,27 +452,33 @@ type
     property OnJsdialog: TOnJsdialog read FOnJsdialog write FOnJsdialog;
     property OnBeforeUnloadDialog: TOnBeforeUnloadDialog read FOnBeforeUnloadDialog write FOnBeforeUnloadDialog;
     property OnResetDialogState: TOnResetDialogState read FOnResetDialogState write FOnResetDialogState;
+    property OnDialogClosed: TOnDialogClosed read FOnDialogClosed write FOnDialogClosed;
     property OnBeforePopup: TOnBeforePopup read FOnBeforePopup write FOnBeforePopup;
     property OnAfterCreated: TOnAfterCreated read FOnAfterCreated write FOnAfterCreated;
     property OnBeforeClose: TOnBeforeClose read FOnBeforeClose write FOnBeforeClose;
     property OnRunModal: TOnRunModal read FOnRunModal write FOnRunModal;
     property OnClose: TOnClose read FOnClose write FOnClose;
+    property OnBeforeBrowse: TOnBeforeBrowse read FOnBeforeBrowse write FOnBeforeBrowse;
     property OnBeforeResourceLoad: TOnBeforeResourceLoad read FOnBeforeResourceLoad write FOnBeforeResourceLoad;
     property OnGetResourceHandler: TOnGetResourceHandler read FOnGetResourceHandler write FOnGetResourceHandler;
     property OnResourceRedirect: TOnResourceRedirect read FOnResourceRedirect write FOnResourceRedirect;
     property OnGetAuthCredentials: TOnGetAuthCredentials read FOnGetAuthCredentials write FOnGetAuthCredentials;
     property OnQuotaRequest: TOnQuotaRequest read FOnQuotaRequest write FOnQuotaRequest;
-    property OnGetCookieManager: TOnGetCookieManager read FOnGetCookieManager write FOnGetCookieManager;
     property OnProtocolExecution: TOnProtocolExecution read FOnProtocolExecution write FOnProtocolExecution;
     property OnBeforePluginLoad: TOnBeforePluginLoad read FOnBeforePluginLoad write FOnBeforePluginLoad;
+    property OnPluginCrashed: TOnPluginCrashed read FOnPluginCrashed write FOnPluginCrashed;
+    property OnRenderProcessTerminated: TOnRenderProcessTerminated read FOnRenderProcessTerminated write FOnRenderProcessTerminated;
     property OnFileDialog: TOnFileDialog read FOnFileDialog write FOnFileDialog;
     property OnGetRootScreenRect: TOnGetRootScreenRect read FOnGetRootScreenRect write FOnGetRootScreenRect;
     property OnGetViewRect: TOnGetViewRect read FOnGetViewRect write FOnGetViewRect;
     property OnGetScreenPoint: TOnGetScreenPoint read FOnGetScreenPoint write FOnGetScreenPoint;
+    property OnGetScreenInfo: TOnGetScreenInfo read FOnGetScreenInfo write FOnGetScreenInfo;
     property OnPopupShow: TOnPopupShow read FOnPopupShow write FOnPopupShow;
     property OnPopupSize: TOnPopupSize read FOnPopupSize write FOnPopupSize;
     property OnPaint: TOnPaint read FOnPaint write FOnPaint;
     property OnCursorChange: TOnCursorChange read FOnCursorChange write FOnCursorChange;
+    property OnScrollOffsetChanged: TOnScrollOffsetChanged read FOnScrollOffsetChanged write FOnScrollOffsetChanged;
+    property OnDragEnter: TOnDragEnter read FOnDragEnter write FOnDragEnter;
 
     property DefaultUrl: ustring read FDefaultUrl write FDefaultUrl;
     property Options: TChromiumOptions read FOptions write FOptions;
@@ -487,7 +512,6 @@ type
     property OnLoadStart;
     property OnLoadEnd;
     property OnLoadError;
-    property OnRenderProcessTerminated;
     property OnPluginCrashed;
     property OnTakeFocus;
     property OnSetFocus;
@@ -510,18 +534,21 @@ type
     property OnJsdialog;
     property OnBeforeUnloadDialog;
     property OnResetDialogState;
+    property OnDialogClosed;
     property OnBeforePopup;
     property OnAfterCreated;
     property OnBeforeClose;
     property OnRunModal;
     property OnClose;
+    property OnBeforeBrowse;
     property OnBeforeResourceLoad;
     property OnGetResourceHandler;
     property OnResourceRedirect;
     property OnGetAuthCredentials;
-    property OnGetCookieManager;
+    property OnRenderProcessTerminated;
     property OnProtocolExecution;
     property OnFileDialog;
+    property OnDragEnter;
 
     property Options;
     property FontOptions;
@@ -540,9 +567,7 @@ type
     property OnLoadStart;
     property OnLoadEnd;
     property OnLoadError;
-    property OnRenderProcessTerminated;
-    property OnPluginCrashed;
-    property OnTakeFocus;
+    property OnTakeFocus;
     property OnSetFocus;
     property OnGotFocus;
     property OnBeforeContextMenu;
@@ -563,16 +588,19 @@ type
     property OnJsdialog;
     property OnBeforeUnloadDialog;
     property OnResetDialogState;
+    property OnDialogClosed;
     property OnBeforePopup;
     property OnAfterCreated;
     property OnBeforeClose;
     property OnRunModal;
     property OnClose;
+    property OnBeforeBrowse;
     property OnBeforeResourceLoad;
     property OnGetResourceHandler;
     property OnResourceRedirect;
     property OnGetAuthCredentials;
-    property OnGetCookieManager;
+    property OnRenderProcessTerminated;
+    property OnPluginCrashed;
     property OnProtocolExecution;
     property OnFileDialog;
     property OnGetRootScreenRect;
@@ -582,6 +610,8 @@ type
     property OnPopupSize;
     property OnPaint;
     property OnCursorChange;
+    property OnScrollOffsetChanged;
+    property OnDragEnter;
 
     property Options;
     property FontOptions;
@@ -606,7 +636,7 @@ var
 type
   TVCLClientHandler = class(TCustomClientHandler)
   public
-    constructor Create(const crm: IChromiumEvents); override;
+    constructor Create(const crm: IChromiumEvents; renderer: Boolean); override;
     destructor Destroy; override;
   end;
 
@@ -631,9 +661,9 @@ begin
 end;
 {$ENDIF}
 
-constructor TVCLClientHandler.Create(const crm: IChromiumEvents);
+constructor TVCLClientHandler.Create(const crm: IChromiumEvents; renderer: Boolean);
 begin
-  inherited Create(crm);
+  inherited Create(crm, renderer);
 {$IFNDEF CEF_MULTI_THREADED_MESSAGE_LOOP}
   if CefInstances = 0 then
     CefTimer := SetTimer(0, 0, 10, @TimerProc);
@@ -659,7 +689,7 @@ begin
   FDefaultUrl := 'about:blank';
 
   if not (csDesigning in ComponentState) then
-    FHandler := TVCLClientHandler.Create(Self);
+    FHandler := TVCLClientHandler.Create(Self, False);
 
   FOptions := TChromiumOptions.Create;
   FFontOptions := TChromiumFontOptions.Create;
@@ -751,7 +781,6 @@ begin
   settings.image_loading := FOptions.ImageLoading;
   settings.image_shrink_standalone_to_fit := FOptions.ImageShrinkStandaloneToFit;
   settings.text_area_resize := FOptions.TextAreaResize;
-  settings.page_cache := FOptions.PageCache;
   settings.tab_to_links := FOptions.TabToLinks;
   settings.author_and_user_styles := FOptions.AuthorAndUserStyles;
   settings.local_storage := FOptions.LocalStorage;
@@ -759,7 +788,6 @@ begin
   settings.application_cache := FOptions.ApplicationCache;
   settings.webgl := FOptions.Webgl;
   settings.accelerated_compositing := FOptions.AcceleratedCompositing;
-  settings.developer_tools := FOptions.DeveloperTools;
 end;
 
 procedure TCustomChromium.Load(const url: ustring);
@@ -906,6 +934,14 @@ begin
       windowInfo, client, settings, noJavascriptAccess, Result);
 end;
 
+function TCustomChromium.doOnBeforeBrowse(const browser: ICefBrowser; const frame: ICefFrame;
+  const request: ICefRequest; is_redirect: Boolean): Boolean;
+begin
+  Result := False;
+  if Assigned(FOnBeforeBrowse) then
+    FOnBeforeBrowse(Self, browser, frame, request, is_redirect, Result);
+end;
+
 function TCustomChromium.doOnBeforeResourceLoad(const browser: ICefBrowser;
   const frame: ICefFrame; const request: ICefRequest): Boolean;
 begin
@@ -960,12 +996,26 @@ begin
 
 end;
 
+procedure TCustomChromium.doOnDialogClosed(const browser: ICefBrowser);
+begin
+  if Assigned(FOnDialogClosed) then
+    FOnDialogClosed(Self, browser);
+end;
+
 procedure TCustomChromium.doOnDownloadUpdated(const browser: ICefBrowser;
   const downloadItem: ICefDownloadItem;
   const callback: ICefDownloadItemCallback);
 begin
   if Assigned(FOnDownloadUpdated) then
     FOnDownloadUpdated(Self, browser, downloadItem, callback);
+end;
+
+function TCustomChromium.doOnDragEnter(const browser: ICefBrowser;
+  const dragData: ICefDragData; mask: TCefDragOperations): Boolean;
+begin
+  Result := False;
+  if Assigned(FOnDragEnter) then
+    FOnDragEnter(Self, browser, dragData, mask, Result);
 end;
 
 function TCustomChromium.doOnFileDialog(const browser: ICefBrowser;
@@ -988,14 +1038,6 @@ begin
       port, realm, scheme, callback, Result);
 end;
 
-function TCustomChromium.doOnGetCookieManager(const browser: ICefBrowser;
-  const mainUrl: ustring): ICefCookieManager;
-begin
-  if Assigned(FOnGetCookieManager) then
-    FOnGetCookieManager(Self, browser, mainUrl, Result) else
-    Result := nil;
-end;
-
 function TCustomChromium.doOnGetResourceHandler(const browser: ICefBrowser;
   const frame: ICefFrame; const request: ICefRequest): ICefResourceHandler;
 begin
@@ -1006,6 +1048,12 @@ end;
 
 function TCustomChromium.doOnGetRootScreenRect(const browser: ICefBrowser;
   rect: PCefRect): Boolean;
+begin
+  Result := False;
+end;
+
+function TCustomChromium.doOnGetScreenInfo(const browser: ICefBrowser;
+  screenInfo: PCefScreenInfo): Boolean;
 begin
   Result := False;
 end;
@@ -1077,7 +1125,7 @@ begin
 end;
 
 procedure TCustomChromium.doOnPaint(const browser: ICefBrowser;
-  kind: TCefPaintElementType; dirtyRectsCount: Cardinal;
+  kind: TCefPaintElementType; dirtyRectsCount: NativeUInt;
   const dirtyRects: PCefRectArray; const buffer: Pointer; width, height: Integer);
 begin
 
@@ -1163,6 +1211,11 @@ begin
     FOnResourceRedirect(Self, browser, frame, oldUrl, newUrl);
 end;
 
+procedure TCustomChromium.doOnScrollOffsetChanged(const browser: ICefBrowser);
+begin
+
+end;
+
 function TCustomChromium.doOnSetFocus(const browser: ICefBrowser;
   source: TCefFocusSource): Boolean;
 begin
@@ -1215,7 +1268,7 @@ begin
   FDefaultUrl := 'about:blank';
 
   if not (csDesigning in ComponentState) then
-    FHandler := TVCLClientHandler.Create(Self);
+    FHandler := TVCLClientHandler.Create(Self, True);
 
   FOptions := TChromiumOptions.Create;
   FFontOptions := TChromiumFontOptions.Create;
@@ -1291,7 +1344,6 @@ begin
   settings.image_loading := FOptions.ImageLoading;
   settings.image_shrink_standalone_to_fit := FOptions.ImageShrinkStandaloneToFit;
   settings.text_area_resize := FOptions.TextAreaResize;
-  settings.page_cache := FOptions.PageCache;
   settings.tab_to_links := FOptions.TabToLinks;
   settings.author_and_user_styles := FOptions.AuthorAndUserStyles;
   settings.local_storage := FOptions.LocalStorage;
@@ -1299,7 +1351,6 @@ begin
   settings.application_cache := FOptions.ApplicationCache;
   settings.webgl := FOptions.Webgl;
   settings.accelerated_compositing := FOptions.AcceleratedCompositing;
-  settings.developer_tools := FOptions.DeveloperTools;
 end;
 
 procedure TCustomChromiumOSR.Load(const url: ustring);
@@ -1398,6 +1449,14 @@ begin
       windowInfo, client, settings, noJavascriptAccess, Result);
 end;
 
+function TCustomChromiumOSR.doOnBeforeBrowse(const browser: ICefBrowser; const frame: ICefFrame;
+  const request: ICefRequest; is_redirect: Boolean): Boolean;
+begin
+  Result := False;
+  if Assigned(FOnBeforeBrowse) then
+    FOnBeforeBrowse(Self, browser, frame, request, is_redirect, Result);
+end;
+
 function TCustomChromiumOSR.doOnBeforeResourceLoad(const browser: ICefBrowser;
   const frame: ICefFrame; const request: ICefRequest): Boolean;
 begin
@@ -1453,12 +1512,26 @@ begin
     FOnCursorChange(Self, browser, cursor);
 end;
 
+procedure TCustomChromiumOSR.doOnDialogClosed(const browser: ICefBrowser);
+begin
+  if Assigned(FOnDialogClosed) then
+    FOnDialogClosed(Self, browser);
+end;
+
 procedure TCustomChromiumOSR.doOnDownloadUpdated(const browser: ICefBrowser;
   const downloadItem: ICefDownloadItem;
   const callback: ICefDownloadItemCallback);
 begin
   if Assigned(FOnDownloadUpdated) then
     FOnDownloadUpdated(Self, browser, downloadItem, callback);
+end;
+
+function TCustomChromiumOSR.doOnDragEnter(const browser: ICefBrowser;
+  const dragData: ICefDragData; mask: TCefDragOperations): Boolean;
+begin
+  Result := False;
+  if Assigned(FOnDragEnter) then
+    FOnDragEnter(Self, browser, dragData, mask, Result);
 end;
 
 function TCustomChromiumOSR.doOnFileDialog(const browser: ICefBrowser;
@@ -1481,14 +1554,6 @@ begin
       port, realm, scheme, callback, Result);
 end;
 
-function TCustomChromiumOSR.doOnGetCookieManager(const browser: ICefBrowser;
-  const mainUrl: ustring): ICefCookieManager;
-begin
-  if Assigned(FOnGetCookieManager) then
-    FOnGetCookieManager(Self, browser, mainUrl, Result) else
-    Result := nil;
-end;
-
 function TCustomChromiumOSR.doOnGetResourceHandler(const browser: ICefBrowser;
   const frame: ICefFrame; const request: ICefRequest): ICefResourceHandler;
 begin
@@ -1503,6 +1568,14 @@ begin
   Result := False;
   if Assigned(FOnGetRootScreenRect) then
     FOnGetRootScreenRect(Self, browser, rect, Result);
+end;
+
+function TCustomChromiumOSR.doOnGetScreenInfo(const browser: ICefBrowser;
+  screenInfo: PCefScreenInfo): Boolean;
+begin
+  Result := False;
+  if Assigned(FOnGetScreenInfo) then
+    FOnGetScreenInfo(Self, browser, screenInfo, Result);
 end;
 
 function TCustomChromiumOSR.doOnGetScreenPoint(const browser: ICefBrowser; viewX,
@@ -1576,7 +1649,7 @@ begin
 end;
 
 procedure TCustomChromiumOSR.doOnPaint(const browser: ICefBrowser;
-  kind: TCefPaintElementType; dirtyRectsCount: Cardinal;
+  kind: TCefPaintElementType; dirtyRectsCount: NativeUInt;
   const dirtyRects: PCefRectArray; const buffer: Pointer; width, height: Integer);
 begin
   if Assigned(FOnPaint) then
@@ -1663,6 +1736,13 @@ procedure TCustomChromiumOSR.doOnResourceRedirect(const browser: ICefBrowser;
 begin
   if Assigned(FOnResourceRedirect) then
     FOnResourceRedirect(Self, browser, frame, oldUrl, newUrl);
+end;
+
+procedure TCustomChromiumOSR.doOnScrollOffsetChanged(
+  const browser: ICefBrowser);
+begin
+  if Assigned(FOnScrollOffsetChanged) then
+    FOnScrollOffsetChanged(Self, browser);
 end;
 
 function TCustomChromiumOSR.doOnSetFocus(const browser: ICefBrowser;
